@@ -6,6 +6,7 @@
   - [How to deploy multiple domains same records](#how-to-deploy-multiple-domains-same-records)
   - [How to deploy private hosted zone](#how-to-deploy-private-hosted-zone)
   - [How to deploy weighted routing](#how-to-deploy-weighted-routing)
+  - [How to deploy ACM with verification](#how-to-deploy-acm-with-verification)
 
 # Terraform module for Route53
 
@@ -274,6 +275,26 @@ module "route53" {
       ]
     }
   ]
+}
+```
+
+## How to deploy ACM with verification
+
+If we wanto to deploy a route53 with record form ACM, and get validations use this way.
+
+```terraform
+module "zone" {
+  source  = "./modules/route53"
+  name = "applaudo.studios.io"
+  skip_delegation_set_creation = true
+}
+
+module "acm" {
+  source  = "./modules/route53"
+  skip_delegation_set_creation  = true
+  skip_acm_certificate_creation = false
+  domain_name = "applaudo-studios.io"
+  zone_id_acm = try(module.zone.zone["applaudo.studios.io"].zone_id, null)
 }
 ```
 

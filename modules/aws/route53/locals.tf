@@ -3,14 +3,16 @@ locals {
   skip_zone_creation           = length(local.zones) == 0
   run_in_vpc                   = length(var.vpc_ids) > 0
   skip_delegation_set_creation = !var.module_enabled || local.skip_zone_creation || local.run_in_vpc ? true : var.skip_delegation_set_creation
+  delegation_set_id            = var.delegation_set_id != null ? var.delegation_set_id: try(aws_route53_delegation_set.aws-delegation-set[0].id, null) # if we do not set the id, It will not create it
 
-  delegation_set_id = var.delegation_set_id != null ? var.delegation_set_id : try(
-    aws_route53_delegation_set.aws-delegation-set[0].id, null
-  ) # if we do not set the id, It will not create it
+  /* acm variables  */
+  domain_name                   = var.domain_name != null ? var.domain_name : null
+  zone_id_acm                   = var.zone_id_acm != null ? var.zone_id_acm : null
+  skip_acm_certificate_creation = var.skip_acm_certificate_creation ? var.skip_acm_certificate_creation : false
 }
 
 locals {
-    records_expanded = {
+  records_expanded = {
     for i, record in var.records : join("-", compact([
       lower(record.type),
       try(lower(record.set_identifier), ""),

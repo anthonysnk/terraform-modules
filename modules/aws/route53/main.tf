@@ -30,7 +30,7 @@ resource "aws_route53_zone" "aws-zone" {
 /* dinamic records  */
 
 resource "aws_route53_record" "aws-record" {
-  for_each = var.module_enabled ? local.records : {}
+  for_each = !local.skip_acm_certificate_creation ? {} : var.module_enabled ? local.records : {}
 
   zone_id         = each.value.zone_id
   type            = each.value.type
@@ -73,4 +73,38 @@ resource "aws_route53_record" "aws-record" {
   }
 
   depends_on = [var.module_depends_on]
+}
+
+/* create with ACM  */
+
+resource "aws_acm_certificate" "aws-certificate" {
+  count             = local.skip_acm_certificate_creation && local.domain_name == null ? 0 : 1
+  domain_name       = var.domain_name
+  validation_method = "DNS"
+}
+
+resource "aws_route53_record" "aws-record-with-acm" {
+  for_each = local.skip_acm_certificate_creation ? {} : {
+    for dvo in aws_acm_certificate.aws-certificate.0.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+  zone_id         = local.zone_id_acm
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  depends_on      = [aws_acm_certificate.aws-certificate]
+}
+
+resource "aws_acm_certificate_validation" "dns_validation" {
+  count = local.skip_acm_certificate_creation ? 0 : 1
+  timeouts {
+    create = "7m"
+  }
+  certificate_arn         = aws_acm_certificate.aws-certificate.0.arn
+  validation_record_fqdns = [for record in aws_route53_record.aws-record-with-acm : record.fqdn]
 }

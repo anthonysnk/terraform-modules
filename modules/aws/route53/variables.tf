@@ -81,3 +81,21 @@ variable "module_depends_on" {
   description = "(Optional) A list of external resources the module depends_on. Default is []."
   default     = []
 }
+
+variable "skip_acm_certificate_creation" {
+  type        = bool
+  description = "(Optional) To create records with a ACM. Default is true"
+  default     = true
+}
+
+variable "domain_name" {
+  type        = string
+  description = "(Opcional) If you dont want to create ACM"
+  default     = null
+}
+
+variable "zone_id_acm" {
+  type        = string
+  description = "(Opcional) If you dont want to create ACM"
+  default     = null
+}
